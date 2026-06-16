@@ -43,17 +43,17 @@ export const sendAppointmentEmail = async (
   await transporter.sendMail({
     from: `"Saini Healthcare" <${process.env.EMAIL_USER}>`,
     to: email,
-    subject: 'Appointment Confirmed - Saini Healthcare',
+    subject: 'Appointment Request Received - Saini Healthcare',
     html: `
       <div style="font-family: sans-serif; max-width: 500px; margin: auto;">
-        <h2 style="color: #1C2B4A;">Appointment Confirmed 🗓️</h2>
+        <h2 style="color: #1C2B4A;">Appointment Request Received 🗓️</h2>
         <p>Hello <strong>${name}</strong>,</p>
         <div style="background: #f0f4ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Date:</strong> ${date}</p>
           <p><strong>Time:</strong> ${time}</p>
           <p><strong>Reason:</strong> ${reason}</p>
         </div>
-        <p>Please arrive 10 minutes early.</p>
+        <p>Your appointment request is <strong>pending confirmation</strong> . You will be notified once confirmed.</p>
         <hr/>
         <p style="color: #888; font-size: 12px;">Saini Healthcare — Your health, our priority.</p>
       </div>

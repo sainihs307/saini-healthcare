@@ -244,3 +244,26 @@ export const deleteFAQ = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+// ── CLINIC HOURS ───────────────────────────────────────
+import ClinicHours from '../models/ClinicHours';
+
+export const getClinicHours = async (req: AuthRequest, res: Response) => {
+  try {
+    const hours = await ClinicHours.findOne().sort({ updatedAt: -1 });
+    res.status(200).json(hours);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const setClinicHours = async (req: AuthRequest, res: Response) => {
+  try {
+    const { slots, slotDuration } = req.body;
+    await ClinicHours.deleteMany({});
+    const hours = await ClinicHours.create({ setBy: req.user._id, slots, slotDuration });
+    res.status(201).json(hours);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};

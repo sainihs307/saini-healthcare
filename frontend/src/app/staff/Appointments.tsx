@@ -9,21 +9,51 @@ const StaffAppointments: React.FC = () => {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [showCancelModal, setShowCancelModal] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [updating, setUpdating] = useState<string | null>(null);
 
   useEffect(() => {
     staffAPI.getAppointments().then((res) => setAppointments(res.data)).catch(console.error).finally(() => setLoading(false));
   }, []);
 
-  const handleStatus = async (id: string, status: string) => {
+  const handleConfirm = async (id: string) => {
+    setUpdating(id);
     try {
-      await staffAPI.updateAppointment(id, { status });
-      setAppointments(appointments.map((a) => a._id === id ? { ...a, status } : a));
-    } catch (err) {
-      console.error(err);
-    }
+      await staffAPI.updateAppointment(id, { status: 'confirmed' });
+      setAppointments(appointments.map((a) => a._id === id ? { ...a, status: 'confirmed' } : a));
+    } catch (err) { console.error(err); }
+    finally { setUpdating(null); }
   };
 
-  const statusColors: any = { pending: 'bg-yellow-50 text-yellow-600', confirmed: 'bg-green-50 text-green-600', cancelled: 'bg-red-50 text-red-600', completed: 'bg-blue-50 text-blue-600' };
+  const handleComplete = async (id: string) => {
+    setUpdating(id);
+    try {
+      await staffAPI.updateAppointment(id, { status: 'completed' });
+      setAppointments(appointments.map((a) => a._id === id ? { ...a, status: 'completed' } : a));
+    } catch (err) { console.error(err); }
+    finally { setUpdating(null); }
+  };
+
+  const handleCancel = async () => {
+    if (!showCancelModal) return;
+    setUpdating(showCancelModal);
+    try {
+      await staffAPI.updateAppointment(showCancelModal, { status: 'cancelled', cancellationReason: cancelReason });
+      setAppointments(appointments.map((a) => a._id === showCancelModal ? { ...a, status: 'cancelled' } : a));
+      setShowCancelModal(null);
+      setCancelReason('');
+    } catch (err) { console.error(err); }
+    finally { setUpdating(null); }
+  };
+
+  const statusColors: any = {
+    pending: 'bg-yellow-50 text-yellow-600',
+    confirmed: 'bg-green-50 text-green-600',
+    cancelled: 'bg-red-50 text-red-600',
+    completed: 'bg-blue-50 text-blue-600'
+  };
+
   const filtered = filter === 'all' ? appointments : appointments.filter((a) => a.status === filter);
 
   return (
@@ -36,7 +66,8 @@ const StaffAppointments: React.FC = () => {
         </div>
         <nav className="flex-1 p-4 space-y-1">
           {[{label:'Dashboard',path:'/staff',icon:'🏠'},{label:'Appointments',path:'/staff/appointments',icon:'📅'},{label:'FAQ',path:'/staff/faq',icon:'❓'}].map((item) => (
-            <button key={item.path} onClick={() => navigate(item.path)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${window.location.pathname === item.path ? 'bg-purple-50 text-purple-600' : 'text-gray-600 hover:bg-gray-50'}`}>
+            <button key={item.path} onClick={() => navigate(item.path)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${window.location.pathname === item.path ? 'bg-purple-50 text-purple-600' : 'text-gray-600 hover:bg-gray-50'}`}>
               <span>{item.icon}</span>{item.label}
             </button>
           ))}
@@ -45,6 +76,7 @@ const StaffAppointments: React.FC = () => {
           <button onClick={() => { logout(); navigate('/login'); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50"><span>🚪</span>Logout</button>
         </div>
       </div>
+
       <div className="flex-1 p-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-800">Appointments</h1>
@@ -52,9 +84,13 @@ const StaffAppointments: React.FC = () => {
         </div>
         <div className="flex gap-2 mb-6">
           {['all','pending','confirmed','completed','cancelled'].map((s) => (
-            <button key={s} onClick={() => setFilter(s)} className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all ${filter === s ? 'bg-purple-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>{s}</button>
+            <button key={s} onClick={() => setFilter(s)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all ${filter === s ? 'bg-purple-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
+              {s}
+            </button>
           ))}
         </div>
+
         {loading ? <div className="text-center text-gray-400 py-12">Loading...</div> :
           filtered.length === 0 ? <div className="bg-white rounded-xl p-12 text-center text-gray-400">No appointments found</div> :
           <div className="space-y-4">
@@ -70,18 +106,34 @@ const StaffAppointments: React.FC = () => {
                       <p className="text-sm text-gray-400">{appt.patient?.email || appt.patient?.phone}</p>
                       <p className="text-sm text-gray-500 mt-1">📅 {new Date(appt.date).toDateString()} at {appt.time}</p>
                       <p className="text-sm text-gray-500">💬 {appt.reason}</p>
+                      {appt.isFlexible && <span className="text-xs bg-yellow-50 text-yellow-600 px-2 py-0.5 rounded-full mt-1 inline-block">Flexible timing</span>}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <span className={`text-xs px-3 py-1 rounded-full font-medium capitalize ${statusColors[appt.status]}`}>{appt.status}</span>
                     {appt.status === 'pending' && (
                       <div className="flex gap-2">
-                        <button onClick={() => handleStatus(appt._id, 'confirmed')} className="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg">Confirm</button>
-                        <button onClick={() => handleStatus(appt._id, 'cancelled')} className="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg">Cancel</button>
+                        <button onClick={() => handleConfirm(appt._id)} disabled={updating === appt._id}
+                          className="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg disabled:opacity-50">
+                          {updating === appt._id ? '...' : 'Confirm'}
+                        </button>
+                        <button onClick={() => setShowCancelModal(appt._id)}
+                          className="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg">
+                          Cancel
+                        </button>
                       </div>
                     )}
                     {appt.status === 'confirmed' && (
-                      <button onClick={() => handleStatus(appt._id, 'completed')} className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg">Mark Complete</button>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleComplete(appt._id)} disabled={updating === appt._id}
+                          className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg disabled:opacity-50">
+                          {updating === appt._id ? '...' : 'Mark Complete'}
+                        </button>
+                        <button onClick={() => setShowCancelModal(appt._id)}
+                          className="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg">
+                          Cancel
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -90,6 +142,29 @@ const StaffAppointments: React.FC = () => {
           </div>
         }
       </div>
+
+      {/* Cancel Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Cancel Appointment</h3>
+            <p className="text-sm text-gray-500 mb-4">Please provide a reason for cancellation. This will be sent to the patient.</p>
+            <textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 mb-4"
+              rows={3} placeholder="Reason for cancellation (e.g. Doctor unavailable, please try another slot)..." />
+            <div className="flex gap-3">
+              <button onClick={handleCancel} disabled={updating !== null}
+                className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg text-sm font-medium disabled:opacity-50">
+                Confirm Cancel
+              </button>
+              <button onClick={() => { setShowCancelModal(null); setCancelReason(''); }}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2 rounded-lg text-sm font-medium">
+                Go Back
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

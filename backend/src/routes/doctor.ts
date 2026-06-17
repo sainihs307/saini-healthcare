@@ -8,6 +8,7 @@ import {
   getAllStaff, verifyStaff, unverifyStaff, grantPermission, revokePermission,
   getAppointments, updateAppointment,
   createFAQ, getFAQs, deleteFAQ,
+  getClinicHours, setClinicHours,
 } from '../controllers/doctorController';
 
 const router = Router();
@@ -30,5 +31,7 @@ router.put('/appointments/:id', updateAppointment);
 router.get('/faq', getFAQs);
 router.post('/faq', createFAQ);
 router.delete('/faq/:id', deleteFAQ);
+router.get('/clinic-hours', getClinicHours);
+router.post('/clinic-hours', setClinicHours);
 
 export default router;

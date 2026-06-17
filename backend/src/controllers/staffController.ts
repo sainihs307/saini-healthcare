@@ -4,7 +4,12 @@ import User from '../models/User';
 import HealthRecord from '../models/HealthRecord';
 import Appointment from '../models/Appointment';
 import FAQ from '../models/FAQ';
-import { sendOTPEmail } from '../services/nodemailer';
+import nodemailer from 'nodemailer';
+
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com', port: 587, secure: false,
+  auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+});
 
 export const getAllPatients = async (req: AuthRequest, res: Response) => {
   try {
@@ -36,6 +41,27 @@ export const getPatientRecords = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const createHealthRecord = async (req: AuthRequest, res: Response) => {
+  try {
+    const { patientId, title, description, diagnosis, prescription, visitDate, nextVisit, isExternalRecord, externalClinicName } = req.body;
+    const patient = await User.findById(patientId);
+    if (!patient || patient.role !== 'patient') return res.status(404).json({ message: 'Patient not found' });
+    const record = await HealthRecord.create({
+      patient: patientId, createdBy: req.user._id,
+      title, description, diagnosis, prescription,
+      isExternalRecord: isExternalRecord === 'true',
+      externalClinicName,
+      documents: [],
+      visitDate: visitDate || new Date(),
+      nextVisit: nextVisit || undefined,
+    });
+    res.status(201).json(record);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 export const getAppointments = async (req: AuthRequest, res: Response) => {
   try {
     const appointments = await Appointment.find()
@@ -53,7 +79,10 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
     const { patientId, doctorId, date, time, reason } = req.body;
     const patient = await User.findById(patientId);
     if (!patient || patient.role !== 'patient') return res.status(404).json({ message: 'Patient not found' });
-    const appointment = await Appointment.create({ patient: patientId, doctor: doctorId, bookedBy: req.user._id, date, time, reason });
+    const appointment = await Appointment.create({
+      patient: patientId, doctor: doctorId,
+      bookedBy: req.user._id, date, time, reason,
+    });
     res.status(201).json(appointment);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -65,16 +94,21 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
     const { status, notes, cancellationReason } = req.body;
     const appointment = await Appointment.findById(req.params.id).populate('patient', 'name email phone');
     if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
+
+    const previousStatus = appointment.status;
+    const statusChanged = status && status !== previousStatus;
+
     appointment.status = status || appointment.status;
-    appointment.notes = notes || appointment.notes;
+    if (notes) appointment.notes = notes;
+    if (cancellationReason) appointment.cancellationReason = cancellationReason;
     await appointment.save();
 
-    // Send email/SMS to patient on confirm or cancel
+    // Only send email if status actually changed
     const patient = appointment.patient as any;
-    if (patient?.email && (status === 'confirmed' || status === 'cancelled')) {
+    if (statusChanged && patient?.email && (status === 'confirmed' || status === 'cancelled')) {
       const subject = status === 'confirmed'
-        ? 'Appointment Confirmed - Saini Healthcare'
-        : 'Appointment Cancelled - Saini Healthcare';
+        ? 'Appointment Confirmed ✅ - Saini Healthcare'
+        : 'Appointment Cancelled ❌ - Saini Healthcare';
       const html = status === 'confirmed'
         ? `<div style="font-family:sans-serif;max-width:500px;margin:auto">
             <h2 style="color:#1C2B4A">Appointment Confirmed ✅</h2>
@@ -93,20 +127,17 @@ export const updateAppointment = async (req: AuthRequest, res: Response) => {
             <p>Hello <strong>${patient.name}</strong>,</p>
             <p>Your appointment on <strong>${new Date(appointment.date).toDateString()}</strong> at <strong>${appointment.time}</strong> has been <strong>cancelled</strong>.</p>
             ${cancellationReason ? `<p><strong>Reason:</strong> ${cancellationReason}</p>` : ''}
-            <p>Please book a new appointment at your convenience.</p>
+            <p>Please book a new appointment at your earliest convenience.</p>
             <hr/><p style="color:#888;font-size:12px">Saini Healthcare</p>
           </div>`;
       try {
-        const nodemailer = require('nodemailer');
-        const transporter = nodemailer.createTransport({
-          host: 'smtp.gmail.com', port: 587, secure: false,
-          auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+        await transporter.sendMail({
+          from: `"Saini Healthcare" <${process.env.EMAIL_USER}>`,
+          to: patient.email, subject, html,
         });
-        await transporter.sendMail({ from: `"Saini Healthcare" <${process.env.EMAIL_USER}>`, to: patient.email, subject, html });
-      } catch (emailErr) {
-        console.error('Email failed:', emailErr);
-      }
+      } catch (emailErr) { console.error('Email failed:', emailErr); }
     }
+
     res.status(200).json(appointment);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

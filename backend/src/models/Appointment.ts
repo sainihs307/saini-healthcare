@@ -7,8 +7,10 @@ export interface IAppointment extends Document {
   date: Date;
   time: string;
   reason: string;
+  isFlexible: boolean;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   notes?: string;
+  cancellationReason?: string;
 }
 
 const AppointmentSchema = new Schema<IAppointment>(
@@ -19,12 +21,10 @@ const AppointmentSchema = new Schema<IAppointment>(
     date: { type: Date, required: true },
     time: { type: String, required: true },
     reason: { type: String, required: true, trim: true },
-    status: {
-      type: String,
-      enum: ['pending', 'confirmed', 'cancelled', 'completed'],
-      default: 'pending',
-    },
+    isFlexible: { type: Boolean, default: false },
+    status: { type: String, enum: ['pending', 'confirmed', 'cancelled', 'completed'], default: 'pending' },
     notes: { type: String, trim: true },
+    cancellationReason: { type: String, trim: true },
   },
   { timestamps: true }
 );

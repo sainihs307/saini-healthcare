@@ -11,6 +11,7 @@ import DoctorPatientRecords from './app/doctor/PatientRecords';
 import DoctorAppointments from './app/doctor/Appointments';
 import DoctorManageStaff from './app/doctor/ManageStaff';
 import DoctorFAQ from './app/doctor/FAQ';
+import DoctorClinicHours from './app/doctor/ClinicHours';
 import StaffDashboard from './app/staff/Dashboard';
 import StaffPatientRecords from './app/staff/PatientRecords';
 import StaffAppointments from './app/staff/Appointments';
@@ -36,6 +37,7 @@ function App() {
           <Route path="/doctor/appointments" element={<ProtectedRoute allowedRoles={['doctor']}><DoctorAppointments /></ProtectedRoute>} />
           <Route path="/doctor/staff" element={<ProtectedRoute allowedRoles={['doctor']}><DoctorManageStaff /></ProtectedRoute>} />
           <Route path="/doctor/faq" element={<ProtectedRoute allowedRoles={['doctor']}><DoctorFAQ /></ProtectedRoute>} />
+          <Route path="/doctor/clinic-hours" element={<ProtectedRoute allowedRoles={['doctor']}><DoctorClinicHours /></ProtectedRoute>} />
           <Route path="/staff" element={<ProtectedRoute allowedRoles={['staff']}><StaffDashboard /></ProtectedRoute>} />
           <Route path="/staff/records/:patientId" element={<ProtectedRoute allowedRoles={['staff']}><StaffPatientRecords /></ProtectedRoute>} />
           <Route path="/staff/appointments" element={<ProtectedRoute allowedRoles={['staff']}><StaffAppointments /></ProtectedRoute>} />

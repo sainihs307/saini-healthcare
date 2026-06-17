@@ -7,6 +7,8 @@ export interface IHealthRecord extends Document {
   description: string;
   diagnosis: string;
   prescription: string;
+  isExternalRecord: boolean;
+  externalClinicName?: string;
   documents: {
     url: string;
     publicId: string;
@@ -25,15 +27,13 @@ const HealthRecordSchema = new Schema<IHealthRecord>(
     description: { type: String, trim: true },
     diagnosis: { type: String, trim: true },
     prescription: { type: String, trim: true },
+    isExternalRecord: { type: Boolean, default: false },
+    externalClinicName: { type: String, trim: true },
     documents: [
       {
         url: { type: String, required: true },
         publicId: { type: String, required: true },
-        type: {
-          type: String,
-          enum: ['xray', 'report', 'prescription', 'other'],
-          default: 'other',
-        },
+        type: { type: String, enum: ['xray', 'report', 'prescription', 'other'], default: 'other' },
         name: { type: String },
       },
     ],

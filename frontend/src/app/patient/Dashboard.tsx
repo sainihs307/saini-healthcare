@@ -100,7 +100,7 @@ const PatientDashboard: React.FC = () => {
               {recentAppointments.map((appt) => (
                 <div key={appt._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                   <div>
-                    <p className="text-sm font-medium text-gray-800">Dr. {appt.doctor?.name}</p>
+                    <p className="text-sm font-medium text-gray-800">{appt.doctor?.name}</p>
                     <p className="text-xs text-gray-500">{appt.reason}</p>
                   </div>
                   <div className="text-right">

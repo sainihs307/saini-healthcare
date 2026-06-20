@@ -215,7 +215,7 @@ const PatientBookAppointment: React.FC = () => {
                         </span>
                         {appt.isFlexible && <span className="text-xs bg-yellow-50 text-yellow-600 border border-yellow-200 px-2 py-1 rounded-full">Flexible timing</span>}
                       </div>
-                      <p className="font-semibold text-gray-800">Dr. {appt.doctor?.name}</p>
+                      <p className="font-semibold text-gray-800">{appt.doctor?.name}</p>
                       <p className="text-sm text-gray-500 mt-1">📅 {new Date(appt.date).toDateString()} at {appt.time}</p>
                       <p className="text-sm text-gray-500">💬 {appt.reason}</p>
                       {appt.notes && <p className="text-sm text-gray-500 mt-1">📝 {appt.notes}</p>}

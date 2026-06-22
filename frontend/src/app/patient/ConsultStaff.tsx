@@ -20,13 +20,6 @@ const PatientConsultStaff: React.FC = () => {
     f.answer.toLowerCase().includes(search.toLowerCase())
   );
 
-  const navItems = [
-    { label: 'Dashboard', path: '/patient', icon: '🏠' },
-    { label: 'My Records', path: '/patient/records', icon: '📋' },
-    { label: 'Appointments', path: '/patient/appointments', icon: '📅' },
-    { label: 'FAQ & Help', path: '/patient/consult', icon: '💬' },
-    { label: 'FAQ', path: '/patient/faq', icon: '❓' },
-  ];
 
   return (
     <div className="flex min-h-screen bg-gray-50">
